@@ -5,8 +5,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
+#define CHECK(x)                                                               \
+  if (x < 0) {                                                                 \
+    perror(#x);                                                                \
+    exit(1);                                                                   \
+  }
 
 void emit(int fd, int type, int code, int val) {
   struct input_event ie;
@@ -25,8 +31,9 @@ int main() {
   int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
 
   ioctl(fd, UI_SET_EVBIT, EV_KEY);
-  ioctl(fd, UI_SET_KEYBIT, KEY_SPACE);
-  ioctl(fd, UI_SET_KEYBIT, KEY_A);
+  for (int i = KEY_RESERVED; i < KEY_MAX; i++) {
+    ioctl(fd, UI_SET_KEYBIT, i);
+  }
 
   struct uinput_user_dev uidev = {0};
 
@@ -40,24 +47,67 @@ int main() {
   ioctl(fd, UI_DEV_SETUP, &uidev);
   ioctl(fd, UI_DEV_CREATE);
 
-  puts("Device created: Waiting for 1 second... Then start spamming space and a");
-
   sleep(1);
 
-  for (int i = 0; i < 100; i++) {
-    emit(fd, EV_KEY, KEY_SPACE, 1);
-    emit(fd, EV_SYN, SYN_REPORT, 0);
-    emit(fd, EV_KEY, KEY_SPACE, 0);
-    emit(fd, EV_SYN, SYN_REPORT, 0);
-    emit(fd, EV_KEY, KEY_A, 1);
-    emit(fd, EV_SYN, SYN_REPORT, 0);
-    emit(fd, EV_KEY, KEY_A, 0);
-    emit(fd, EV_SYN, SYN_REPORT, 0);
-    usleep(1500);
+  puts("When B is pressed, 'kontol' wil be typed. Press ESC to exit.");
+  // TODO: change this device
+  const char *device = "";
+  int in_fd = open(device, O_RDONLY | O_NONBLOCK);
+
+  if (ioctl(in_fd, EVIOCGRAB, 1) == -1) {
+    perror("Error grabbing the device");
+    goto cleanup;
+    return 1;
   }
-  sleep(1);
+  struct input_event ev;
 
-  ioctl(fd, UI_DEV_DESTROY);
+  while (1) {
+    ssize_t n = read(in_fd, &ev, sizeof ev);
+    if (n == -1) {
+      if (errno == EAGAIN) {
+        continue;
+      }
+      perror("Error reading input event");
+      break;
+    }
+    if (n != sizeof ev) {
+      perror("Error reading input event");
+      break;
+    }
+
+    if (ev.type == EV_KEY) {
+      if (ev.code == KEY_B && ev.value == 1) {
+        // K O N T O L
+        emit(fd, EV_KEY, KEY_K, 1);
+        emit(fd, EV_KEY, KEY_K, 0);
+        emit(fd, EV_KEY, KEY_O, 1);
+        emit(fd, EV_KEY, KEY_O, 0);
+        emit(fd, EV_KEY, KEY_N, 1);
+        emit(fd, EV_KEY, KEY_N, 0);
+        emit(fd, EV_KEY, KEY_T, 1);
+        emit(fd, EV_KEY, KEY_T, 0);
+        emit(fd, EV_KEY, KEY_O, 1);
+        emit(fd, EV_KEY, KEY_O, 0);
+        emit(fd, EV_KEY, KEY_L, 1);
+        emit(fd, EV_KEY, KEY_L, 0);
+        continue;
+      }
+
+      if (ev.code == KEY_ESC && ev.value == 1) {
+        break;
+      }
+    }
+
+    write(fd, &ev, sizeof ev);
+  }
+
+  if (ioctl(in_fd, EVIOCGRAB, NULL) == -1) {
+    perror("\nError releasing the device");
+  }
   puts("\nDone... Device deleted");
+
+cleanup:
+  ioctl(fd, UI_DEV_DESTROY);
+  close(in_fd);
   close(fd);
 }
