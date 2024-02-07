@@ -1,14 +1,15 @@
 CXX=g++
 APP=evdev
-CXXFLAGS=-MMD -MP -I. -std=c++17
+CXXFLAGS=-MMD -MP -I. -Isrc -std=c++17
 
 SRC = $(wildcard src/*.cpp)
 OBJ=$(SRC:.cpp=.o)
 DEP=$(SRC:.cpp=.d)
 
+$(APP): src/keycodes.hpp vendor/toml.hpp $(OBJ)
+	$(CXX) $(CXXFLAGS) -o $(APP) $(OBJ) $(LDFLAGS)
 
-$(APP): $(OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+-include $(DEP)
 
 *.o: *.cpp
 	$(CXX) $^ -o $@ $(CXXFLAGS)
@@ -19,7 +20,8 @@ vendor/toml.hpp: vendor
 vendor:
 	mkdir vendor
 
--include $(DEP)
+src/keycodes.hpp: keygen.sh
+	./keygen.sh > src/keycodes.hpp
 
 run: $(APP)
 	sudo ./evdev

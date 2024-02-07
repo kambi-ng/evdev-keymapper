@@ -1,0 +1,7 @@
+[Config]
+layer_key="CAPSLOCK"
+toggle=false
+
+[Keymap]
+"A"="B"
+"C"="D"
