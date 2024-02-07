@@ -20,10 +20,10 @@ int keystrtoi (std::string key) {
   }
 }
 
-std::optional<config> readconfig(std::string filename) {
+std::optional<config> read_config(std::string filename) {
   auto conf_file = toml::parse_file(filename);
 
-  auto keys = conf_file["Keymap"];
+  auto keys = conf_file[KEYMAP_TABLE_NAME];
   auto keymap = std::make_shared<std::map<int, int>>();
 
   for (const auto &[key, value] : *keys.as_table()) {
@@ -39,10 +39,15 @@ std::optional<config> readconfig(std::string filename) {
     keymap->insert(std::make_pair(orig_key, dest_key));
   }
 
-  auto layerkeystr = conf_file["Config"]["layer_key"].value_or("");
+  auto layerkeystr = conf_file[CONFIG_TABLE_NAME][LAYER_KEY_CONF_NAME].value_or("");
   int layerkey = keystrtoi(layerkeystr);
-  auto toggle = conf_file["Config"]["toggle"].value_or(false);
+  if (layerkey == -1)  return {};
 
-  return config{.layerkey = layerkey, .toggle = toggle, .keymap = keymap};
+  auto toggle = conf_file[CONFIG_TABLE_NAME][TOGGLE_CONF_NAME].value_or(false);
+
+  auto device = conf_file[CONFIG_TABLE_NAME][DEVICE_CONF_NAME].value<std::string>();
+  if (!device.has_value()) return {};
+
+  return config{.layerkey = layerkey, .toggle = toggle, .device = device.value(), .keymap = keymap};
 }
 

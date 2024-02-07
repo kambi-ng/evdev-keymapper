@@ -24,7 +24,7 @@ src/keycodes.hpp: keygen.sh
 	./keygen.sh > src/keycodes.hpp
 
 run: $(APP)
-	sudo ./evdev
+	sudo ./evdev config.example.toml
 
 clean:
 	rm -f $(OBJ) $(DEP) $(APP)

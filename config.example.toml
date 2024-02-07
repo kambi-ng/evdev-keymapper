@@ -1,7 +1,7 @@
 [Config]
-layer_key="CAPSLOCK"
-toggle=false
+layer_key="DELETE"
+toggle=true
+device="/dev/input/by-id/btkeyboard"
 
 [Keymap]
 "A"="B"
-"C"="D"
