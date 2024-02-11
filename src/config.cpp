@@ -81,7 +81,7 @@ std::optional<config> read_config(std::string filename) {
     return {};
   }
 
-  return config{.toggle = toggle,
+  return config{.toggle = toggle  ,
                 .device = device.value(),
                 .keymap = keymap,
                 .layermap = layermap};

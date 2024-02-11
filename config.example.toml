@@ -1,9 +1,12 @@
 [Config]
-toggle=true
+toggle=false
 device="/dev/input/by-id/btkeyboard"
 
 [Keymap]
-"C"="D"
+"G"="H"
 
 [Keymap.DELETE]
 "A"="B"
+
+[Keymap.COMMA]
+"R"="T"

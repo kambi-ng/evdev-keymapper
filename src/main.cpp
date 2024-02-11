@@ -90,61 +90,70 @@ int main(int argc, char **argv) {
 
   devices dev(conf.value().device);
 
-  // listen_and_remap(dev, conf.value());
+  listen_and_remap(dev, conf.value());
 }
 
-// void listen_and_remap(devices &dev, config &conf) {
-//   struct input_event curr_key = {0};
+void listen_and_remap(devices &dev, config &conf) {
 
-//   bool press_toggle = !conf.toggle;
-//   int toggle_key = conf.layerkey;
+  auto curr_layer = conf.keymap;
+  auto curr_layer_code = -1;
+  bool toggle = conf.toggle;
 
-//   bool layer_enabled = false;
+  struct input_event ev = {0};
 
-//   while (running) {
-//     ssize_t n = read(dev.in_fd, &curr_key, sizeof(curr_key));
-//     if (n == -1) {
-//       if (errno == EAGAIN) {
-//         continue;
-//       }
-//       perror("Error reading input event");
-//       break;
-//     }
+  while (running) {
+    if (read(dev.in_fd, &ev, sizeof(struct input_event)) < 0) {
+      if (errno == EAGAIN) {
+        continue;
+      }
+      perror("Error reading key");
+      running = false;
+      break;
+    }
 
-//     bool tk = curr_key.code == toggle_key;
-//     bool tk_pressed = tk && curr_key.value == 1;
-//     bool tk_released = tk && curr_key.value == 0;
+    bool tk_key = conf.layermap->find(ev.code) != conf.layermap->end();
+    if (!toggle) {
+      // this will switch to default layer when key is released
+      // unless we are on another layer
+      if (tk_key && ev.value == 1) {
+        curr_layer_code = ev.code;
+        curr_layer = conf.layermap->at(ev.code);
+      }
 
-//     if (press_toggle) {
-//       // If press_toggle is enabled, set isToggled based on the key press and
-//       // release
-//       if (tk_pressed) {
-//         layer_enabled = true; // Set true when the key is pressed
-//       } else if (tk_released) {
-//         layer_enabled = false; // Set false when the key is released
-//       }
-//     } else {
-//       // Original toggle functionality
-//       if (tk_pressed) {
-//         // Flip the toggle state only when the key is pressed
-//         layer_enabled = !layer_enabled;
-//         continue;
-//       }
-//     }
+      if (tk_key && ev.value == 0) {
+        curr_layer_code = -1;
+        curr_layer = conf.keymap;
+      }
 
-//     // TODO do remap layer0
-//     if (!layer_enabled) {
-//       write(dev.out_fd, &curr_key, sizeof(curr_key));
-//       continue;
-//     }
+      if ( ev.code == curr_layer_code )
+        continue;
+    }
 
-//     auto layer1_map = conf.keymap;
+    if (toggle) {
+      if (tk_key && ev.value == 1) {
+        // if curr_layer_code = -1, we are on default layer then switch to layer
+        if (curr_layer_code == -1) {
+          curr_layer = conf.layermap->at(ev.code);
+          curr_layer_code = ev.code;
+          continue;
+        } else if (curr_layer_code == ev.code) {
+          // if curr_layer_code = ev.code, we are on the layer then switch to
+          // default layer
+          curr_layer = conf.keymap;
+          curr_layer_code = -1;
+          continue;
+        }
+      }
+    }
 
-//     int keycode = curr_key.code;
-//     if (layer1_map->find(keycode) != layer1_map->end()) {
-//       keycode = (*layer1_map)[keycode];
-//     }
-//     curr_key.code = keycode;
-//     write(dev.out_fd, &curr_key, sizeof(curr_key));
-//   }
-// }
+    if (curr_layer->find(ev.code) != curr_layer->end()) {
+      ev.code = (*curr_layer)[ev.code];
+    }
+
+    if (write(dev.out_fd, &ev, sizeof(struct input_event)) < 0) {
+      perror("Error writing key");
+      running = false;
+      break;
+    }
+  }
+}
