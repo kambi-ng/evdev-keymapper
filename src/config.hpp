@@ -13,11 +13,14 @@
 #define TOGGLE_CONF_NAME "toggle"
 #define DEVICE_CONF_NAME "device"
 
+using map_t = std::map<int, int>;
+using map_t_ptr = std::shared_ptr<map_t>;
+
 struct config {
-  int layerkey;
   bool toggle;
   std::string device;
-  std::shared_ptr<std::map<int, int>> keymap;
+  map_t_ptr keymap;
+  std::shared_ptr<std::map<int, map_t_ptr>> layermap;
 };
 
 std::optional<config> read_config(std::string filename);

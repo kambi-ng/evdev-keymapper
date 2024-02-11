@@ -1,7 +1,9 @@
 [Config]
 toggle=true
 device="/dev/input/by-id/btkeyboard"
-layer_key="DELETE"
 
 [Keymap]
+"C"="D"
+
+[Keymap.DELETE]
 "A"="B"

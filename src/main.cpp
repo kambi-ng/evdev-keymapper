@@ -90,61 +90,61 @@ int main(int argc, char **argv) {
 
   devices dev(conf.value().device);
 
-  listen_and_remap(dev, conf.value());
+  // listen_and_remap(dev, conf.value());
 }
 
-void listen_and_remap(devices &dev, config &conf) {
-  struct input_event curr_key = {0};
+// void listen_and_remap(devices &dev, config &conf) {
+//   struct input_event curr_key = {0};
 
-  bool press_toggle = !conf.toggle;
-  int toggle_key = conf.layerkey;
+//   bool press_toggle = !conf.toggle;
+//   int toggle_key = conf.layerkey;
 
-  bool layer_enabled = false;
+//   bool layer_enabled = false;
 
-  while (running) {
-    ssize_t n = read(dev.in_fd, &curr_key, sizeof(curr_key));
-    if (n == -1) {
-      if (errno == EAGAIN) {
-        continue;
-      }
-      perror("Error reading input event");
-      break;
-    }
+//   while (running) {
+//     ssize_t n = read(dev.in_fd, &curr_key, sizeof(curr_key));
+//     if (n == -1) {
+//       if (errno == EAGAIN) {
+//         continue;
+//       }
+//       perror("Error reading input event");
+//       break;
+//     }
 
-    bool tk = curr_key.code == toggle_key;
-    bool tk_pressed = tk && curr_key.value == 1;
-    bool tk_released = tk && curr_key.value == 0;
+//     bool tk = curr_key.code == toggle_key;
+//     bool tk_pressed = tk && curr_key.value == 1;
+//     bool tk_released = tk && curr_key.value == 0;
 
-    if (press_toggle) {
-      // If press_toggle is enabled, set isToggled based on the key press and
-      // release
-      if (tk_pressed) {
-        layer_enabled = true; // Set true when the key is pressed
-      } else if (tk_released) {
-        layer_enabled = false; // Set false when the key is released
-      }
-    } else {
-      // Original toggle functionality
-      if (tk_pressed) {
-        // Flip the toggle state only when the key is pressed
-        layer_enabled = !layer_enabled;
-        continue;
-      }
-    }
+//     if (press_toggle) {
+//       // If press_toggle is enabled, set isToggled based on the key press and
+//       // release
+//       if (tk_pressed) {
+//         layer_enabled = true; // Set true when the key is pressed
+//       } else if (tk_released) {
+//         layer_enabled = false; // Set false when the key is released
+//       }
+//     } else {
+//       // Original toggle functionality
+//       if (tk_pressed) {
+//         // Flip the toggle state only when the key is pressed
+//         layer_enabled = !layer_enabled;
+//         continue;
+//       }
+//     }
 
-    // TODO do remap layer0
-    if (!layer_enabled) {
-      write(dev.out_fd, &curr_key, sizeof(curr_key));
-      continue;
-    }
+//     // TODO do remap layer0
+//     if (!layer_enabled) {
+//       write(dev.out_fd, &curr_key, sizeof(curr_key));
+//       continue;
+//     }
 
-    auto layer1_map = conf.keymap;
+//     auto layer1_map = conf.keymap;
 
-    int keycode = curr_key.code;
-    if (layer1_map->find(keycode) != layer1_map->end()) {
-      keycode = (*layer1_map)[keycode];
-    }
-    curr_key.code = keycode;
-    write(dev.out_fd, &curr_key, sizeof(curr_key));
-  }
-}
+//     int keycode = curr_key.code;
+//     if (layer1_map->find(keycode) != layer1_map->end()) {
+//       keycode = (*layer1_map)[keycode];
+//     }
+//     curr_key.code = keycode;
+//     write(dev.out_fd, &curr_key, sizeof(curr_key));
+//   }
+// }
