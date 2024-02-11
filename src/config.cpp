@@ -19,11 +19,21 @@ int keystrtoi(std::string key) {
     return -1;
   }
 }
+std::vector<std::string> split_string(const std::string& s, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(s);
+    while (getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
 
 std::optional<config> read_config(std::string filename) {
   auto conf_file = toml::parse_file(filename);
   auto keys = conf_file[KEYMAP_TABLE_NAME];
-  auto keymap = std::make_shared<std::map<int, int>>();
+  auto keymap = std::make_shared<map_t>();
   auto layermap = std::make_shared<std::map<int, map_t_ptr>>();
 
   for (const auto &[key, value] : *keys.as_table()) {
@@ -43,13 +53,21 @@ std::optional<config> read_config(std::string filename) {
           printf("Error parsing key %s\n", sub_orig.c_str());
           return {};
         }
-        int dest_key = keystrtoi(sub_dest.value_or(sub_orig));
-        if (dest_key == -1){
-          printf("Error parsing key %s\n", sub_dest.value_or(sub_orig).c_str());
-          return {};
+
+        auto dest_keys = std::vector<int>();
+        auto vals = split_string(sub_dest.value_or(sub_orig), '+');
+
+        for (auto val : vals){
+          int dest_key = keystrtoi(val);
+          if (dest_key == -1){
+            printf("Error parsing key %s\n", val.c_str());
+            return {};
+          }
+          dest_keys.push_back(dest_key);
         }
+
         printf("    Adding %s -> %s in layer %s\n", sub_orig.c_str(), sub_dest.value_or(orig).c_str(), orig.c_str());
-        submap->insert(std::make_pair(orig_key, dest_key));
+        submap->insert(std::make_pair(orig_key, dest_keys));
       }
 
       layermap->insert(std::make_pair(keystrtoi(orig), submap));
@@ -62,14 +80,22 @@ std::optional<config> read_config(std::string filename) {
       printf("Error parsing key %s\n", orig.c_str());
       return {};
     }
-    int dest_key = keystrtoi(dest.value_or(orig));
-    if (dest_key == -1){
-      printf("Error parsing key %s\n", dest.value_or(orig).c_str());
-      return {};
+
+    auto dest_keys = std::vector<int>();
+
+    auto vals = split_string(dest.value_or(orig), '+');
+
+    for (auto val : vals){
+      int dest_key = keystrtoi(val);
+      if (dest_key == -1){
+        printf("Error parsing key %s\n", val.c_str());
+        return {};
+      }
+      dest_keys.push_back(dest_key);
     }
 
     printf("Adding %s -> %s\n", orig.c_str(), dest.value_or(orig).c_str());
-    keymap->insert(std::make_pair(orig_key, dest_key));
+    keymap->insert(std::make_pair(orig_key, dest_keys));
   }
 
   auto toggle = conf_file[CONFIG_TABLE_NAME][TOGGLE_CONF_NAME].value_or(false);

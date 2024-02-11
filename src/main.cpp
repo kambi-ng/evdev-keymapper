@@ -158,9 +158,17 @@ void listen_and_remap(devices &dev, config &conf) {
     }
 
     if (curr_layer->find(ev.code) != curr_layer->end()) {
-      ev.code = (*curr_layer)[ev.code];
+      auto ev_codes = (*curr_layer)[ev.code];
+      for (auto code : ev_codes) {
+        ev.code = code;
+        if (write(dev.out_fd, &ev, sizeof(struct input_event)) < 0) {
+          perror("Error writing key");
+          running = false;
+          break;
+        }
+      }
+      continue;
     }
-
     if (write(dev.out_fd, &ev, sizeof(struct input_event)) < 0) {
       perror("Error writing key");
       running = false;

@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #define CONFIG_TABLE_NAME "Config"
 #define KEYMAP_TABLE_NAME "Keymap"
@@ -13,7 +14,8 @@
 #define TOGGLE_CONF_NAME "toggle"
 #define DEVICE_CONF_NAME "device"
 
-using map_t = std::map<int, int>;
+
+using map_t = std::map<int, std::vector<int>>;
 using map_t_ptr = std::shared_ptr<map_t>;
 
 struct config {
