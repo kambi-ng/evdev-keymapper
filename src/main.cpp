@@ -18,9 +18,37 @@ struct devices {
   int in_fd;
   int out_fd;
 
+  std::string keyboard_dev;
   // state
+  void wait_keyboard(){
+    bool printed = false;
+    while (true) {
+      if (access(keyboard_dev.c_str(), F_OK) != -1) {
+        break;
+      }
+      if (!printed){
+        printed = true;
+        printf("Waiting for device %s\n", keyboard_dev.c_str());
+      }
+      usleep(1000 * 100);
+    }
+    printf("Device %s found\n", keyboard_dev.c_str());
+
+    in_fd = open(keyboard_dev.c_str(), O_RDONLY | O_NONBLOCK);
+
+    if (in_fd < 0) {
+      perror("\nError opening device");
+      exit(1);
+    }
+
+    if (ioctl(in_fd, EVIOCGRAB, 1) == -1) {
+      perror("Error grabbing the device");
+      exit(1);
+    }
+  }
 
   devices(std::string keyboard_dev) {
+    this->keyboard_dev = keyboard_dev;
 
     out_fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
 
@@ -46,27 +74,7 @@ struct devices {
     ioctl(out_fd, UI_DEV_SETUP, &uidev);
     ioctl(out_fd, UI_DEV_CREATE);
 
-  open_file:
-    in_fd = open(keyboard_dev.c_str(), O_RDONLY | O_NONBLOCK);
-    if (errno == ENOENT) {
-      fprintf(stderr, "Device %s not found, retrying in 5 seconds\n",
-              keyboard_dev.c_str());
-      sleep(5);
-      if (running)
-        goto open_file;
-      else
-        exit(1);
-    }
-
-    if (in_fd < 0) {
-      perror("\nError opening device");
-      exit(1);
-    }
-
-    if (ioctl(in_fd, EVIOCGRAB, 1) == -1) {
-      perror("Error grabbing the device");
-      exit(1);
-    }
+    wait_keyboard();
   }
 
   ~devices() {
@@ -107,6 +115,7 @@ int main(int argc, char **argv) {
 
 void listen_and_remap(devices &dev, config &conf) {
 
+  puts("Listening for key events..");
   auto curr_layer = conf.keymap;
   auto curr_layer_code = -1;
   bool toggle = conf.toggle;
@@ -115,13 +124,20 @@ void listen_and_remap(devices &dev, config &conf) {
 
   while (running) {
     if (read(dev.in_fd, &ev, sizeof(struct input_event)) < 0) {
-      if (errno == EAGAIN) {
+      if (errno == EINTR || errno == EAGAIN) {
         continue;
       }
+      if (errno == ENODEV) {
+        printf("Device %s lost\n", dev.keyboard_dev.c_str());
+        dev.wait_keyboard();
+        continue;
+      }
+
       perror("Error reading key");
       running = false;
       break;
     }
+
 
     bool tk_key = conf.layermap->find(ev.code) != conf.layermap->end();
     if (!toggle) {

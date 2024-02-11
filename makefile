@@ -24,7 +24,8 @@ src/keycodes.hpp: keygen.sh
 	./keygen.sh > src/keycodes.hpp
 
 run: $(APP)
-	sudo $(APP) config.example.toml
+	sudo ./$(APP) config.example.toml
+
 
 clean:
 	rm -f $(OBJ) $(DEP) $(APP)

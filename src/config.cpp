@@ -56,6 +56,7 @@ map_t_ptr parse_layer(const toml::table &table) {
   for (const auto &[key, value] : table) {
     auto orig = std::string(key.str());
     auto dest = value.value<std::string>();
+    printf("   Mapping Key %s -> %s\n", orig.c_str(), dest.value_or("").c_str());
     auto keyval = parse_key(orig, dest.value_or(orig));
     if (keyval.first == -1){
       return {};
@@ -84,6 +85,7 @@ std::optional<config> read_config(std::string filename) {
     }
 
     auto dest = value.value_or(orig);
+    printf("Mapping Key %s -> %s\n", orig.c_str(), dest.c_str());
     auto keyval = parse_key(orig, dest);
 
     if (keyval.first == -1){
