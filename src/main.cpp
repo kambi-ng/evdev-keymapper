@@ -1,3 +1,4 @@
+#include <asm-generic/errno-base.h>
 #include <csignal>
 #include <errno.h>
 #include <fcntl.h>
@@ -11,6 +12,8 @@
 
 #include "config.hpp"
 
+bool running = true;
+
 struct devices {
   int in_fd;
   int out_fd;
@@ -18,17 +21,6 @@ struct devices {
   // state
 
   devices(std::string keyboard_dev) {
-    in_fd = open(keyboard_dev.c_str(), O_RDONLY | O_NONBLOCK);
-
-    if (in_fd < 0) {
-      perror("\nError opening device");
-      exit(1);
-    }
-
-    if (ioctl(in_fd, EVIOCGRAB, 1) == -1) {
-      perror("Error grabbing the device");
-      exit(1);
-    }
 
     out_fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
 
@@ -53,6 +45,28 @@ struct devices {
     ioctl(out_fd, UI_SET_PHYS, "kambi-ng-udev");
     ioctl(out_fd, UI_DEV_SETUP, &uidev);
     ioctl(out_fd, UI_DEV_CREATE);
+
+  open_file:
+    in_fd = open(keyboard_dev.c_str(), O_RDONLY | O_NONBLOCK);
+    if (errno == ENOENT) {
+      fprintf(stderr, "Device %s not found, retrying in 5 seconds\n",
+              keyboard_dev.c_str());
+      sleep(5);
+      if (running)
+        goto open_file;
+      else
+        exit(1);
+    }
+
+    if (in_fd < 0) {
+      perror("\nError opening device");
+      exit(1);
+    }
+
+    if (ioctl(in_fd, EVIOCGRAB, 1) == -1) {
+      perror("Error grabbing the device");
+      exit(1);
+    }
   }
 
   ~devices() {
@@ -68,8 +82,6 @@ struct devices {
 };
 
 void listen_and_remap(devices &dev, config &conf);
-
-bool running = true;
 
 int main(int argc, char **argv) {
 
@@ -124,7 +136,7 @@ void listen_and_remap(devices &dev, config &conf) {
         curr_layer = conf.keymap;
       }
 
-      if ( ev.code == curr_layer_code )
+      if (ev.code == curr_layer_code)
         continue;
     }
 
