@@ -1,5 +1,5 @@
 CXX=g++
-APP=evdev
+APP=evdev-remapper
 CXXFLAGS=-MMD -MP -I. -Isrc -std=c++17
 
 SRC = $(wildcard src/*.cpp)
@@ -24,12 +24,20 @@ src/keycodes.hpp: keygen.sh
 	./keygen.sh > src/keycodes.hpp
 
 run: $(APP)
-	sudo ./evdev config.example.toml
+	sudo $(APP) config.example.toml
 
 clean:
 	rm -f $(OBJ) $(DEP) $(APP)
 
 lsp: clean
 	bear -- make
+
+install: $(APP)
+	install -Dm755 $(APP) /usr/local/bin/$(APP)
+	install -Dm644 config.example.toml /etc/$(APP)/config.toml
+# install systemd service file
+	install -Dm644 systemd/evdev-remapper.service /usr/lib/systemd/system/evdev-remapper.service
+# install udev rule
+	install -Dm644 udev/64-evdev-remapper.rules /usr/lib/udev/rules.d/64-evdev-remapper.rules
 
 .PHONY: run clean lsp

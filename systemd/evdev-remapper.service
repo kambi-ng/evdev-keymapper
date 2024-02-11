@@ -1,0 +1,9 @@
+[Unit]
+Description= evdev-remapper: Remapping keyboard keys with layer support
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/evdev-remapper /etc/evdev-remapper/config.toml
+
+[Install]
+WantedBy=multi-user.target

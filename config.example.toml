@@ -3,7 +3,14 @@ toggle=false
 device="/dev/input/by-id/btkeyboard"
 
 [Keymap]
-"G"="H"
+"RIGHTALT"="CAPSLOCK"
 
-[Keymap.DELETE]
-"A"="B"
+[Keymap.CAPSLOCK]
+"I"="UP"
+"K"="DOWN"
+"J"="LEFT"
+"L"="RIGHT"
+"B"="BACKSPACE"
+"F"="ESC"
+"N"="LEFTSHIFT+MINUS"
+"APOSTROPHE"="GRAVE"

@@ -169,6 +169,7 @@ void listen_and_remap(devices &dev, config &conf) {
       }
       continue;
     }
+
     if (write(dev.out_fd, &ev, sizeof(struct input_event)) < 0) {
       perror("Error writing key");
       running = false;
