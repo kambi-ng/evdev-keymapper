@@ -7,6 +7,3 @@ device="/dev/input/by-id/btkeyboard"
 
 [Keymap.DELETE]
 "A"="B"
-
-[Keymap.COMMA]
-"R"="T"

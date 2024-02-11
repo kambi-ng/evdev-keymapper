@@ -115,12 +115,11 @@ void listen_and_remap(devices &dev, config &conf) {
     if (!toggle) {
       // this will switch to default layer when key is released
       // unless we are on another layer
-      if (tk_key && ev.value == 1) {
+      if (tk_key && ev.value == 1 && curr_layer_code == -1) {
         curr_layer_code = ev.code;
         curr_layer = conf.layermap->at(ev.code);
       }
-
-      if (tk_key && ev.value == 0) {
+      if (tk_key && ev.value == 0 && curr_layer_code == ev.code) {
         curr_layer_code = -1;
         curr_layer = conf.keymap;
       }
