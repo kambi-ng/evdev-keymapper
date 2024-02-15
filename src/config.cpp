@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "keycodes.hpp"
+#include "print.hpp"
 
 int keystrtoi(std::string key) {
   if (keycodeMap.find(key) != keycodeMap.end()) {
@@ -32,7 +33,8 @@ std::vector<std::string> split_string(const std::string& s, char delimiter) {
 std::pair<int, std::vector<int>> parse_key(std::string key, std::string value ){
   int orig_key = keystrtoi(key);
   if (orig_key == -1){
-    printf("Error parsing key %s\n", key.c_str());
+
+    printerr("Error parsing key", key);
     return std::make_pair(-1, std::vector<int>());
   }
   auto dest_keys = std::vector<int>();
@@ -42,7 +44,7 @@ std::pair<int, std::vector<int>> parse_key(std::string key, std::string value ){
   for (auto val : vals){
     int dest_key = keystrtoi(val);
     if (dest_key == -1){
-      printf("Error parsing key %s\n", val.c_str());
+      printerr("Error parsing key", val);
       return std::make_pair(-1, std::vector<int>());
     }
     dest_keys.push_back(dest_key);
@@ -55,9 +57,9 @@ map_t_ptr parse_layer(const toml::table &table) {
   auto map = std::make_shared<map_t>();
   for (const auto &[key, value] : table) {
     auto orig = std::string(key.str());
-    auto dest = value.value<std::string>();
-    printf("   Mapping Key %s -> %s\n", orig.c_str(), dest.value_or("").c_str());
-    auto keyval = parse_key(orig, dest.value_or(orig));
+    auto dest = value.value_or(orig);
+    print("   Mapping Key", orig, "->", dest);
+    auto keyval = parse_key(orig, dest);
     if (keyval.first == -1){
       return {};
     }
@@ -78,14 +80,14 @@ std::optional<config> read_config(std::string filename) {
     auto orig = std::string(key.str());
 
     if (value.type() == toml::node_type::table) {
-      printf("Parsing Layer %s\n", orig.c_str());
+      print("Parsing Layer", orig);
       auto map = parse_layer(*value.as_table());
       layermap->insert(std::make_pair(keystrtoi(orig), map));
       continue;
     }
 
     auto dest = value.value_or(orig);
-    printf("Mapping Key %s -> %s\n", orig.c_str(), dest.c_str());
+    print("Mapping Key", orig, "->", dest);
     auto keyval = parse_key(orig, dest);
 
     if (keyval.first == -1){
@@ -95,11 +97,11 @@ std::optional<config> read_config(std::string filename) {
     keymap->insert(keyval);
   }
 
-  auto toggle = conf_file[CONFIG_TABLE_NAME][TOGGLE_CONF_NAME].value_or(false);
+  auto toggle = conf_file[CONFIG_TABLE_NAME][TOGGLE_CONF_NAME].value_or(true);
   auto device =
       conf_file[CONFIG_TABLE_NAME][DEVICE_CONF_NAME].value<std::string>();
   if (!device.has_value()){
-    printf("Error parsing device\n");
+    printerr("Error reading device in config");
     return {};
   }
 

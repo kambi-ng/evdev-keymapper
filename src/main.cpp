@@ -13,7 +13,7 @@
 #include <thread>
 
 #include "config.hpp"
-
+#include "print.hpp"
 bool running = true;
 
 struct devices {
@@ -34,7 +34,8 @@ struct devices {
       }
       usleep(1000 * 100);
     }
-    printf("Device %s found\n", keyboard_dev.c_str());
+
+    print("Device", keyboard_dev, "found");
 
     in_fd = open(keyboard_dev.c_str(), O_RDONLY | O_NONBLOCK);
 
@@ -80,7 +81,7 @@ struct devices {
   }
 
   ~devices() {
-    puts("cleaning up..");
+    print("Closing devices");
     if (ioctl(in_fd, EVIOCGRAB, NULL) == -1) {
       perror("\nError releasing the device");
     }
@@ -99,15 +100,6 @@ int main(int argc, char **argv) {
 
   signal(SIGTERM, [](int) { running = false; });
 
-  // HACK: flush stdout and stderr every 100ms
-  std::thread t([]() {
-    while (running) {
-      fflush(stdout);
-      fflush(stderr);
-      usleep(1000 * 100);
-    }
-  });
-
   if (argc < 2) {
     fprintf(stderr, "Usage: %s /path/to/config.toml\n", argv[0]);
     exit(1);
@@ -115,7 +107,7 @@ int main(int argc, char **argv) {
 
   auto conf = read_config(std::string(argv[1]));
   if (!conf.has_value()) {
-    fprintf(stderr, "Error reading config\n");
+    printerr("Error reading config");
     exit(2);
   }
 
@@ -126,7 +118,7 @@ int main(int argc, char **argv) {
 
 void listen_and_remap(devices &dev, config &conf) {
 
-  puts("Listening for key events..");
+  print("Starting evdev-keymapper..");
   auto curr_layer = conf.keymap;
   auto curr_layer_code = -1;
   bool toggle = conf.toggle;
@@ -142,7 +134,7 @@ void listen_and_remap(devices &dev, config &conf) {
         continue;
       }
       if (errno == ENODEV) {
-        printf("Device %s lost\n", dev.keyboard_dev.c_str());
+        print("Device", dev.keyboard_dev, "lost");
         dev.wait_keyboard();
         continue;
       }
