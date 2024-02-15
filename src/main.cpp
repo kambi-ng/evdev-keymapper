@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <linux/input.h>
 #include <linux/uinput.h>
+#include <set>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,13 +21,13 @@ struct devices {
 
   std::string keyboard_dev;
   // state
-  void wait_keyboard(){
+  void wait_keyboard() {
     bool printed = false;
     while (true) {
       if (access(keyboard_dev.c_str(), F_OK) != -1) {
         break;
       }
-      if (!printed){
+      if (!printed) {
         printed = true;
         printf("Waiting for device %s\n", keyboard_dev.c_str());
       }
@@ -122,6 +123,8 @@ void listen_and_remap(devices &dev, config &conf) {
 
   struct input_event ev = {0};
 
+  std::set<int> pressed_keys = {};
+
   while (running) {
     if (read(dev.in_fd, &ev, sizeof(struct input_event)) < 0) {
       if (errno == EINTR || errno == EAGAIN) {
@@ -138,7 +141,6 @@ void listen_and_remap(devices &dev, config &conf) {
       break;
     }
 
-
     bool tk_key = conf.layermap->find(ev.code) != conf.layermap->end();
     if (!toggle) {
       // this will switch to default layer when key is released
@@ -150,6 +152,18 @@ void listen_and_remap(devices &dev, config &conf) {
       if (tk_key && ev.value == 0 && curr_layer_code == ev.code) {
         curr_layer_code = -1;
         curr_layer = conf.keymap;
+
+        // release all pressed keys
+        for (auto code : pressed_keys) {
+          ev.code = code;
+          ev.value = 0;
+          if (write(dev.out_fd, &ev, sizeof(struct input_event)) < 0) {
+            perror("Error writing key");
+            running = false;
+            break;
+          }
+        }
+        pressed_keys.clear();
       }
 
       if (ev.code == curr_layer_code)
@@ -166,6 +180,19 @@ void listen_and_remap(devices &dev, config &conf) {
         } else if (curr_layer_code == ev.code) {
           // if curr_layer_code = ev.code, we are on the layer then switch to
           // default layer
+
+          // release all pressed keys
+          for (auto code : pressed_keys) {
+            ev.code = code;
+            ev.value = 0;
+            if (write(dev.out_fd, &ev, sizeof(struct input_event)) < 0) {
+              perror("Error writing key");
+              running = false;
+              break;
+            }
+          }
+          pressed_keys.clear();
+
           curr_layer = conf.keymap;
           curr_layer_code = -1;
           continue;
@@ -176,6 +203,12 @@ void listen_and_remap(devices &dev, config &conf) {
     if (curr_layer->find(ev.code) != curr_layer->end()) {
       auto ev_codes = (*curr_layer)[ev.code];
       for (auto code : ev_codes) {
+        if (ev.value == 1) {
+          pressed_keys.insert(code);
+        } else if (ev.value == 0) {
+          pressed_keys.erase(code);
+        }
+
         ev.code = code;
         if (write(dev.out_fd, &ev, sizeof(struct input_event)) < 0) {
           perror("Error writing key");

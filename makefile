@@ -1,5 +1,5 @@
 CXX=g++
-APP=evdev-remapper
+APP=evdev-keymapper
 CXXFLAGS=-MMD -MP -I. -Isrc -std=c++17
 
 SRC = $(wildcard src/*.cpp)
@@ -34,11 +34,17 @@ lsp: clean
 	bear -- make
 
 install: $(APP)
-	install -Dm755 $(APP) /usr/local/bin/$(APP)
-	install -Dm644 config.example.toml /etc/$(APP)/config.toml
+	install -Dm755 ./$(APP) /usr/local/bin/$(APP)
+	[ ! -f /etc/testing/config.toml ] && install -Dm644 config.example.toml /etc/testing/config.toml || true
 # install systemd service file
-	install -Dm644 systemd/evdev-remapper.service /usr/lib/systemd/system/evdev-remapper.service
+	[ ! -f /usr/lib/systemd/system/evdev/evdev-keymapper.service ] && install -Dm644 systemd/evdev-keymapper.service /usr/lib/systemd/system/evdev-keymapper.service || true
 # install udev rule
-	install -Dm644 udev/64-evdev-remapper.rules /usr/lib/udev/rules.d/64-evdev-remapper.rules
+	[ ! -f /usr/lib/udev/rules.d/64-evdev-keymapper.rules ] && install -Dm644 udev/64-evdev-keymapper.rules /usr/lib/udev/rules.d/64-evdev-keymapper.rules || true
+
+uninstall:
+	rm -f /usr/local/bin/$(APP)
+#	rm -f /etc/testing/config.toml
+	rm -f /usr/lib/systemd/system/evdev-keymapper.service
+	rm -f /usr/lib/udev/rules.d/64-evdev-keymapper.rules
 
 .PHONY: run clean lsp

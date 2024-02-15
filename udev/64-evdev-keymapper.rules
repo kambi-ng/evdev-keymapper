@@ -1,0 +1,1 @@
+KERNEL=="event*", ATTRS{phys}=="kambi-ng-udev", SYMLINK+="input/by-id/evdev-keymap"
