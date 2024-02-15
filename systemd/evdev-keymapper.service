@@ -3,6 +3,9 @@ Description= evdev-remapper: Remapping keyboard keys with layer support
 
 [Service]
 ExecStart=/usr/local/bin/evdev-keymapper /etc/evdev-keymapper/config.toml
+StandardOutput=journal+console
+StandardError=journal+console
+
 
 [Install]
 WantedBy=multi-user.target

@@ -37,7 +37,7 @@ install: $(APP)
 	install -Dm755 ./$(APP) /usr/local/bin/$(APP)
 	[ ! -f /etc/testing/config.toml ] && install -Dm644 config.example.toml /etc/testing/config.toml || true
 # install systemd service file
-	[ ! -f /usr/lib/systemd/system/evdev/evdev-keymapper.service ] && install -Dm644 systemd/evdev-keymapper.service /usr/lib/systemd/system/evdev-keymapper.service || true
+	[ ! -f /usr/lib/systemd/system/evdev-keymapper.service ] && install -Dm644 systemd/evdev-keymapper.service /usr/lib/systemd/system/evdev-keymapper.service || true
 # install udev rule
 	[ ! -f /usr/lib/udev/rules.d/64-evdev-keymapper.rules ] && install -Dm644 udev/64-evdev-keymapper.rules /usr/lib/udev/rules.d/64-evdev-keymapper.rules || true
 

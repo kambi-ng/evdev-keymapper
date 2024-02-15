@@ -10,6 +10,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <thread>
 
 #include "config.hpp"
 
@@ -98,6 +99,15 @@ int main(int argc, char **argv) {
 
   signal(SIGTERM, [](int) { running = false; });
 
+  // HACK: flush stdout and stderr every 100ms
+  std::thread t([]() {
+    while (running) {
+      fflush(stdout);
+      fflush(stderr);
+      usleep(1000 * 100);
+    }
+  });
+
   if (argc < 2) {
     fprintf(stderr, "Usage: %s /path/to/config.toml\n", argv[0]);
     exit(1);
@@ -126,6 +136,7 @@ void listen_and_remap(devices &dev, config &conf) {
   std::set<int> pressed_keys = {};
 
   while (running) {
+
     if (read(dev.in_fd, &ev, sizeof(struct input_event)) < 0) {
       if (errno == EINTR || errno == EAGAIN) {
         continue;
