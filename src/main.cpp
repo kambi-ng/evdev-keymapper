@@ -66,7 +66,7 @@ struct devices {
     }
 
     struct uinput_user_dev uidev = {0};
-    strcpy(uidev.name, "Kambing udev remapper");
+    strcpy(uidev.name, "vDevice Kambing Evdev Keymapper");
     // strcpy(uidev.name, "1234567890");
     uidev.id.bustype = BUS_VIRTUAL;
     uidev.id.vendor = 0x69;
