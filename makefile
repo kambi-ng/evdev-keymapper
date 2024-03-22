@@ -35,7 +35,7 @@ lsp: clean
 
 install: $(APP)
 	install -Dm755 ./$(APP) /usr/local/bin/$(APP)
-	[ ! -f /etc/testing/config.toml ] && install -Dm644 config.example.toml /etc/testing/config.toml || true
+	[ ! -f /etc/testing/config.toml ] && install -Dm644 config.example.toml /etc/evdev-keymapper/config.toml || true
 # install systemd service file
 	[ ! -f /usr/lib/systemd/system/evdev-keymapper.service ] && install -Dm644 systemd/evdev-keymapper.service /usr/lib/systemd/system/evdev-keymapper.service || true
 # install udev rule
