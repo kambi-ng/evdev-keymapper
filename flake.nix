@@ -102,6 +102,14 @@
     };
 
   in {
+    # Automatically add the package to pkgs
+    overlays.default = final: prev: {
+      evdev-keymapper = evdev-keymapper-package;
+    };
+
+    # Automatically make the service available
+    nixosModules.default = evdev-keymapper-service;
+
     packages.${system}.evdev-keymapper = evdev-keymapper-package;
     nixosModules.evdev-keymapper = evdev-keymapper-service;
      devShells.${system}.default = pkgs.mkShell {
