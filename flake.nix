@@ -1,5 +1,5 @@
 {
-  description = "My NixOS Service with systemd";
+  description = "evdev keymapper service";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
@@ -45,7 +45,7 @@
       tomlFile = tomlFormat.generate "config.toml" cfg.settings;
     in {
       options.services.evdev-keymapper = {
-        enable = lib.mkEnableOption "Enable my service";
+        enable = lib.mkEnableOption "Enable evdev-keymapper";
 
         package = lib.mkOption {
           type = lib.types.package;
@@ -80,7 +80,7 @@
 
       config = lib.mkIf cfg.enable {
         systemd.services.evdev-keymapper = {
-          description = "My Configurable Service";
+          description = "evdev-keymapper: remap keys with evdev";
           wantedBy = [ "multi-user.target" ];
           serviceConfig = {
             ExecStart = "${cfg.package}/bin/evdev-keymapper ${tomlFile}";
@@ -106,19 +106,17 @@
     overlays.default = final: prev: {
       evdev-keymapper = evdev-keymapper-package;
     };
-
     # Automatically make the service available
     nixosModules.default = evdev-keymapper-service;
 
-    packages.${system}.evdev-keymapper = evdev-keymapper-package;
-    nixosModules.evdev-keymapper = evdev-keymapper-service;
-     devShells.${system}.default = pkgs.mkShell {
+    devShells.${system}.default = pkgs.mkShell {
       packages = [
         pkgs.gnumake
         pkgs.fd
         pkgs.linuxHeaders
       ];
       shellHook = ''
+        export IN_NIX_SHELL=1
         echo "Dev shell ready"
       '';
     };
