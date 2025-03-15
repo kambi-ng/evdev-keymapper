@@ -41,10 +41,8 @@
 
     evdev-keymapper-service = { config, lib, pkgs, ... }: let
       cfg = config.services.evdev-keymapper;
-      tomlFile = pkgs.writeTextFile {
-        name = "config.toml";
-        text = builtins.toJSON cfg.settings; # JSON is TOML-compatible
-      };
+      tomlFormat = pkgs.formats.toml { };
+      tomlFile = tomlFormat.generate "config.toml" cfg.settings;
     in {
       options.services.evdev-keymapper = {
         enable = lib.mkEnableOption "Enable my service";
@@ -59,8 +57,8 @@
           type = lib.types.attrs;
           default = {
             Config = {
-            toggle=false;
-            device="/dev/input/event0";
+              toggle=false;
+              device="/dev/input/event0";
             };
             Keymap = {
               "RIGHTALT"="CAPSLOCK";
