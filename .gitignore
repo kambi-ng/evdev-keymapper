@@ -59,6 +59,9 @@ dkms.conf
 /vendor/
 /compile_commands.json
 /evdev
-/src/keycodes.hpp
+# /src/keycodes.hpp
 /.cache/
 /evdev-remapper
+/.ccls-cache/
+/evdev-keymapper
+/result

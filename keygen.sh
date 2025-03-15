@@ -1,8 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 inputFile="/usr/include/linux/input-event-codes.h"
 outputFile="src/keycodemap.cpp"
 
+if [[ -n "$IN_NIX_SHELL" ]]; then
+   inputFile="$(fd input-event-codes.h /nix/store --one-file-system --max-results=1)" 
+fi
 
 cat <<EOF
 #ifndef KEYMAP_H

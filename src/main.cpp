@@ -11,6 +11,8 @@
 #include <time.h>
 #include <unistd.h>
 #include <thread>
+#define _GNU_SOURCE
+#include <poll.h>
 
 #include "config.hpp"
 #include "print.hpp"
@@ -127,7 +129,19 @@ void listen_and_remap(devices &dev, config &conf) {
 
   std::set<int> pressed_keys = {};
 
+
+  struct pollfd pfd = {dev.in_fd, POLL_IN};
+
   while (running) {
+    int ret = poll(&pfd,1 , -1);
+    if (ret < 0) {
+      if (errno == EINTR) continue;
+      perror("poll error");
+      running = false;
+      break;
+    }
+
+    if (!(pfd.revents & POLLIN)) continue; // No input event, loop again
 
     if (read(dev.in_fd, &ev, sizeof(struct input_event)) < 0) {
       if (errno == EINTR || errno == EAGAIN) {

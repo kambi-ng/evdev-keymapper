@@ -1,6 +1,6 @@
 [Config]
 toggle=false
-device="/dev/input/by-id/btkeyboard"
+device="/dev/input/event0"
 
 [Keymap]
 "RIGHTALT"="CAPSLOCK"
