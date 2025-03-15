@@ -40,13 +40,13 @@
     };
 
     evdev-keymapper-service = { config, lib, pkgs, ... }: let
-      cfg = config.services.my-service;
+      cfg = config.services.evdev-keymapper;
       tomlFile = pkgs.writeTextFile {
-        name = "my-service-config.toml";
+        name = "config.toml";
         text = builtins.toJSON cfg.settings; # JSON is TOML-compatible
       };
     in {
-      options.services.my-service = {
+      options.services.evdev-keymapper = {
         enable = lib.mkEnableOption "Enable my service";
 
         package = lib.mkOption {
@@ -81,7 +81,7 @@
       };
 
       config = lib.mkIf cfg.enable {
-        systemd.services.my-service = {
+        systemd.services.evdev-keymapper = {
           description = "My Configurable Service";
           wantedBy = [ "multi-user.target" ];
           serviceConfig = {
