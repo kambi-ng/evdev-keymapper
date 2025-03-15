@@ -85,7 +85,7 @@
           description = "My Configurable Service";
           wantedBy = [ "multi-user.target" ];
           serviceConfig = {
-            ExecStart = "${cfg.package}/bin/my-service --config ${tomlFile}";
+            ExecStart = "${cfg.package}/bin/evdev-keymapper ${tomlFile}";
             Restart = "always";
 
             # Enable strict sandboxing
