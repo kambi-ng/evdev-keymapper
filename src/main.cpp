@@ -32,7 +32,7 @@ struct devices {
       }
       if (!printed) {
         printed = true;
-        printf("Waiting for device %s\n", keyboard_dev.c_str());
+        print("Waiting for device", keyboard_dev.c_str());
       }
       usleep(1000 * 100);
     }
