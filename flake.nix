@@ -15,7 +15,7 @@
     # 1. Define the package (Builds the service)
     evdev-keymapper-package = pkgs.stdenv.mkDerivation {
       pname = "evdev-keymapper";
-      version = "0.3.0";
+      version = "0.3.5";
 
       src = ./.;
 
