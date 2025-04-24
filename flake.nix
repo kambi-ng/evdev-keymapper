@@ -103,6 +103,7 @@
 
   in {
     # Automatically add the package to pkgs
+    packages.${system}.default = evdev-keymapper-package;
     overlays.default = final: prev: {
       evdev-keymapper = evdev-keymapper-package;
     };

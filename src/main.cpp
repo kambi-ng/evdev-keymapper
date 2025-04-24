@@ -140,14 +140,15 @@ void listen_and_remap(devices &dev, config &conf) {
       running = false;
       break;
     }
+  
 
-    if (!(pfd.revents & POLLIN)) continue; // No input event, loop again
+    // if (!(pfd.revents & POLLIN)) continue; // No input event, loop again
 
     if (read(dev.in_fd, &ev, sizeof(struct input_event)) < 0) {
       if (errno == EINTR || errno == EAGAIN) {
         continue;
       }
-      if (errno == ENODEV) {
+    if (errno == ENODEV) {
         print("Device", dev.keyboard_dev, "lost");
         dev.wait_keyboard();
         continue;
