@@ -94,6 +94,86 @@ struct devices {
   }
 };
 
+struct State {
+  std::shared_ptr<std::map<int, std::vector<int>>> active_layer;  // Current active keymap layer
+  int layer_key;                                   // Key that activated current layer (-1 for default)
+  std::set<int> pressed_keys;                     // Currently pressed keys
+  
+  State(config& conf) : 
+    active_layer(conf.keymap),
+    layer_key(-1) {}
+
+  void handle_key_event(const input_event& ev, config& conf, int out_fd) {
+    bool is_layer_key = conf.layermap->find(ev.code) != conf.layermap->end();
+
+    // Handle layer switching
+    if (is_layer_key) {
+      if (ev.value == 1) {  // Press
+        active_layer = conf.layermap->at(ev.code);
+        layer_key = ev.code;
+      } else if (ev.value == 0) {  // Release
+        active_layer = conf.keymap;
+        layer_key = -1;
+        release_all_keys(out_fd);
+      }
+      return;
+    }
+
+    // Handle regular keys
+    auto it = active_layer->find(ev.code);
+    if (it != active_layer->end()) {
+      // Send mapped key events
+      struct input_event mapped_ev = ev;
+      for (int code : it->second) {
+        mapped_ev.code = code;
+        if (ev.value == 1) {
+          pressed_keys.insert(code);
+        } else if (ev.value == 0) {
+          pressed_keys.erase(code);
+        }
+        write_event(mapped_ev, out_fd);
+      }
+    } else {
+      // Pass through unmapped keys
+      if (ev.value == 1) {
+        pressed_keys.insert(ev.code);
+      } else if (ev.value == 0) {
+        pressed_keys.erase(ev.code);
+      }
+      write_event(ev, out_fd);
+    }
+
+    // Always send a sync event after key events
+    struct input_event sync_ev = {0};
+    sync_ev.type = EV_SYN;
+    sync_ev.code = SYN_REPORT;
+    write_event(sync_ev, out_fd);
+  }
+
+private:
+  void release_all_keys(int fd) {
+    struct input_event ev = {0};
+    ev.type = EV_KEY;
+    ev.value = 0;
+
+    for (int code : pressed_keys) {
+      ev.code = code;
+      write_event(ev, fd);
+    }
+    
+    // Send final sync
+    ev.type = EV_SYN;
+    ev.code = SYN_REPORT;
+    write_event(ev, fd);
+    
+    pressed_keys.clear();
+  }
+
+  void write_event(const input_event& ev, int fd) {
+    write(fd, &ev, sizeof(ev));
+  }
+};
+
 void listen_and_remap(devices &dev, config &conf);
 
 int main(int argc, char **argv) {
@@ -119,128 +199,30 @@ int main(int argc, char **argv) {
 }
 
 void listen_and_remap(devices &dev, config &conf) {
-
-  print("Starting evdev-keymapper..");
-  auto curr_layer = conf.keymap;
-  auto curr_layer_code = -1;
-  bool toggle = conf.toggle;
-
-  struct input_event ev = {0};
-
-  std::set<int> pressed_keys = {};
-
-
+  State state(conf);
   struct pollfd pfd = {dev.in_fd, POLL_IN};
+  struct input_event ev;
 
   while (running) {
-    int ret = poll(&pfd,1 , -1);
+    int ret = poll(&pfd, 1, -1);
     if (ret < 0) {
       if (errno == EINTR) continue;
-      perror("poll error");
-      running = false;
       break;
     }
-  
 
-    // if (!(pfd.revents & POLLIN)) continue; // No input event, loop again
-
-    if (read(dev.in_fd, &ev, sizeof(struct input_event)) < 0) {
-      if (errno == EINTR || errno == EAGAIN) {
-        continue;
-      }
-    if (errno == ENODEV) {
-        print("Device", dev.keyboard_dev, "lost");
+    if (read(dev.in_fd, &ev, sizeof(ev)) < 0) {
+      if (errno == EINTR || errno == EAGAIN) continue;
+      if (errno == ENODEV) {
         dev.wait_keyboard();
         continue;
       }
-
-      perror("Error reading key");
-      running = false;
       break;
     }
 
-    bool tk_key = conf.layermap->find(ev.code) != conf.layermap->end();
-    if (!toggle) {
-      // this will switch to default layer when key is released
-      // unless we are on another layer
-      if (tk_key && ev.value == 1 && curr_layer_code == -1) {
-        curr_layer_code = ev.code;
-        curr_layer = conf.layermap->at(ev.code);
-      }
-      if (tk_key && ev.value == 0 && curr_layer_code == ev.code) {
-        curr_layer_code = -1;
-        curr_layer = conf.keymap;
-
-        // release all pressed keys
-        for (auto code : pressed_keys) {
-          ev.code = code;
-          ev.value = 0;
-          if (write(dev.out_fd, &ev, sizeof(struct input_event)) < 0) {
-            perror("Error writing key");
-            running = false;
-            break;
-          }
-        }
-        pressed_keys.clear();
-      }
-
-      if (ev.code == curr_layer_code)
-        continue;
-    }
-
-    if (toggle) {
-      if (tk_key && ev.value == 1) {
-        // if curr_layer_code = -1, we are on default layer then switch to layer
-        if (curr_layer_code == -1) {
-          curr_layer = conf.layermap->at(ev.code);
-          curr_layer_code = ev.code;
-          continue;
-        } else if (curr_layer_code == ev.code) {
-          // if curr_layer_code = ev.code, we are on the layer then switch to
-          // default layer
-
-          // release all pressed keys
-          for (auto code : pressed_keys) {
-            ev.code = code;
-            ev.value = 0;
-            if (write(dev.out_fd, &ev, sizeof(struct input_event)) < 0) {
-              perror("Error writing key");
-              running = false;
-              break;
-            }
-          }
-          pressed_keys.clear();
-
-          curr_layer = conf.keymap;
-          curr_layer_code = -1;
-          continue;
-        }
-      }
-    }
-
-    if (curr_layer->find(ev.code) != curr_layer->end()) {
-      auto ev_codes = (*curr_layer)[ev.code];
-      for (auto code : ev_codes) {
-        if (ev.value == 1) {
-          pressed_keys.insert(code);
-        } else if (ev.value == 0) {
-          pressed_keys.erase(code);
-        }
-
-        ev.code = code;
-        if (write(dev.out_fd, &ev, sizeof(struct input_event)) < 0) {
-          perror("Error writing key");
-          running = false;
-          break;
-        }
-      }
-      continue;
-    }
-
-    if (write(dev.out_fd, &ev, sizeof(struct input_event)) < 0) {
-      perror("Error writing key");
-      running = false;
-      break;
+    if (ev.type == EV_KEY) {
+      state.handle_key_event(ev, conf, dev.out_fd);
+    } else {
+      write(dev.out_fd, &ev, sizeof(ev));
     }
   }
 }
