@@ -24,7 +24,7 @@ struct devices {
 
   std::string keyboard_dev;
   // state
-  void wait_keyboard() {
+  void wait_keyboard(bool init) {
     bool printed = false;
     while (true) {
       if (access(keyboard_dev.c_str(), F_OK) != -1) {
@@ -35,6 +35,11 @@ struct devices {
         print("Waiting for device", keyboard_dev.c_str());
       }
       usleep(1000 * 100);
+    }
+
+    for (int i = 3; i>0 && init ; i--) {
+        print("Starting in", i);
+        sleep(1);
     }
 
     print("Device", keyboard_dev, "found");
@@ -52,6 +57,10 @@ struct devices {
     }
   }
 
+  void wait_keyboard(){
+    wait_keyboard(false);
+  }
+  
   devices(std::string keyboard_dev) {
     this->keyboard_dev = keyboard_dev;
 
@@ -79,7 +88,7 @@ struct devices {
     ioctl(out_fd, UI_DEV_SETUP, &uidev);
     ioctl(out_fd, UI_DEV_CREATE);
 
-    wait_keyboard();
+    wait_keyboard(true);
   }
 
   ~devices() {
@@ -192,6 +201,7 @@ int main(int argc, char **argv) {
     printerr("Error reading config");
     exit(2);
   }
+
 
   devices dev(conf.value().device);
 
