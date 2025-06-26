@@ -86,7 +86,7 @@
             systemd.services.evdev-keymapper = {
               description = "evdev-keymapper: remap keys with evdev";
               wantedBy = [ "multi-user.target" ];
-              after = [ "bluetooth.service" ];
+              wants = [ "bluetooth.service" ];
               serviceConfig = {
                 ExecStart = "${cfg.package}/bin/evdev-keymapper ${tomlFile}";
                 Restart = "always";
