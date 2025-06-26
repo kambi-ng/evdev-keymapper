@@ -87,6 +87,7 @@
               description = "evdev-keymapper: remap keys with evdev";
               wantedBy = [ "multi-user.target" ];
               wants = [ "bluetooth.service" ];
+              after = [ "bluetooth.service" ];
               serviceConfig = {
                 ExecStart = "${cfg.package}/bin/evdev-keymapper ${tomlFile}";
                 Restart = "always";
