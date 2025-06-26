@@ -26,7 +26,7 @@ struct devices {
   // state
   void wait_keyboard(bool init) {
     bool printed = false;
-    while (true) {
+    while (running) {
       if (access(keyboard_dev.c_str(), F_OK) != -1) {
         break;
       }
